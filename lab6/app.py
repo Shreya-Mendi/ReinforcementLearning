@@ -287,6 +287,23 @@ st.markdown("""
         border-color: #e0d4c0 !important;
     }
 
+    /* ── Keep sidebar always visible ── */
+    [data-testid="stSidebar"] {
+        display: flex !important;
+        visibility: visible !important;
+        width: 21rem !important;
+        min-width: 21rem !important;
+        transform: none !important;
+        transition: none !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] {
+        display: none !important;
+    }
+    /* push main content to account for fixed sidebar */
+    .main .block-container {
+        margin-left: 0 !important;
+    }
+
     /* ── Hide Streamlit chrome ── */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
