@@ -16,6 +16,8 @@ import csv
 import random
 from datetime import datetime, timezone
 
+import html as _html
+
 import streamlit as st
 import anthropic
 
@@ -34,147 +36,160 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* ── Base ── */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;600;700&display=swap');
 
+    /* ── Base & page background ── */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
+        background-color: #faf6f0;
+        color: #222222;
     }
-
+    .stApp {
+        background-color: #faf6f0;
+    }
     .main .block-container {
         padding: 2rem 3rem 4rem;
         max-width: 1200px;
+        background-color: #faf6f0;
+    }
+
+    /* ── Sidebar ── */
+    [data-testid="stSidebar"] {
+        background-color: #f2ebe0;
+        border-right: 2px solid #e0d4c0;
+    }
+    [data-testid="stSidebar"] * {
+        color: #3d3530 !important;
     }
 
     /* ── App header ── */
     .app-header {
         text-align: center;
         margin-bottom: 2.5rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 2.5rem 2rem 2rem;
+        border-bottom: 2px solid #e0d4c0;
     }
     .app-header h1 {
-        font-size: 2rem;
+        font-family: 'Lora', serif;
+        font-size: 2.2rem;
         font-weight: 700;
-        color: #111827;
-        margin-bottom: 0.25rem;
+        color: #1f2e1f;
+        margin-bottom: 0.4rem;
+        letter-spacing: -0.02em;
     }
     .app-header p {
-        color: #6b7280;
-        font-size: 0.95rem;
+        color: #7a6e62;
+        font-size: 0.97rem;
         margin: 0;
+        font-weight: 400;
     }
 
-    /* ── Progress bar ── */
+    /* ── Progress ── */
     .progress-section {
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 1.25rem 1.5rem;
-        margin-bottom: 2rem;
+        background: #f2ebe0;
+        border: 1.5px solid #e0d4c0;
+        border-radius: 10px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.75rem;
     }
     .progress-label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        color: #6b7280;
+        color: #9c8a78;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.5rem;
+        letter-spacing: 0.07em;
+        margin-bottom: 0.4rem;
+    }
+
+    /* ── Streamlit progress bar color ── */
+    [data-testid="stProgressBar"] > div > div {
+        background-color: #c9963a !important;
     }
 
     /* ── Prompt card ── */
     .prompt-card {
         background: #ffffff;
-        border: 1.5px solid #e5e7eb;
-        border-radius: 14px;
+        border: 1.5px solid #e0d4c0;
+        border-radius: 12px;
         padding: 1.75rem 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin-bottom: 1.75rem;
+        box-shadow: 0 2px 8px rgba(139,108,70,0.07);
     }
     .prompt-tag {
         display: inline-block;
-        background: #eff6ff;
-        color: #2563eb;
-        font-size: 0.72rem;
-        font-weight: 600;
-        padding: 3px 10px;
+        background: #f5e9d5;
+        color: #8a5c1e;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 12px;
         border-radius: 100px;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin-bottom: 0.75rem;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.9rem;
+        border: 1px solid #e0c898;
     }
     .prompt-text {
-        font-size: 1.1rem;
-        line-height: 1.65;
-        color: #111827;
+        font-family: 'Lora', serif;
+        font-size: 1.08rem;
+        line-height: 1.7;
+        color: #1f2e1f;
         font-weight: 400;
     }
     .prompt-tension {
-        margin-top: 0.75rem;
-        font-size: 0.8rem;
-        color: #9ca3af;
+        margin-top: 0.85rem;
+        font-size: 0.78rem;
+        color: #b09880;
         font-style: italic;
+        letter-spacing: 0.01em;
     }
 
     /* ── Response cards ── */
     .response-card {
         background: #ffffff;
-        border: 1.5px solid #e5e7eb;
-        border-radius: 14px;
+        border: 1.5px solid #e0d4c0;
+        border-radius: 12px;
         padding: 1.5rem 1.75rem;
         height: 100%;
-        min-height: 280px;
+        min-height: 300px;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        position: relative;
+        box-shadow: 0 1px 4px rgba(139,108,70,0.06);
     }
     .response-card.selected-a {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        border-color: #c9963a;
+        box-shadow: 0 0 0 3px rgba(201,150,58,0.15);
     }
     .response-card.selected-b {
-        border-color: #16a34a;
-        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+        border-color: #5f704f;
+        box-shadow: 0 0 0 3px rgba(95,112,79,0.15);
     }
     .response-card.selected-tie {
-        border-color: #d97706;
-        box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
+        border-color: #9c4f48;
+        box-shadow: 0 0 0 3px rgba(156,79,72,0.12);
     }
     .response-label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         margin-bottom: 1rem;
         padding-bottom: 0.75rem;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1.5px solid #f0e8d8;
     }
-    .response-label-a { color: #2563eb; }
-    .response-label-b { color: #16a34a; }
+    .response-label-a { color: #c9963a; }
+    .response-label-b { color: #5f704f; }
     .response-text {
-        font-size: 0.92rem;
-        line-height: 1.7;
-        color: #374151;
+        font-size: 0.91rem;
+        line-height: 1.75;
+        color: #3d3530;
+        white-space: pre-wrap;
     }
     .response-meta {
         margin-top: 1rem;
         padding-top: 0.75rem;
-        border-top: 1px solid #f3f4f6;
-        font-size: 0.72rem;
-        color: #9ca3af;
-    }
-
-    /* ── Preference buttons ── */
-    .preference-section {
-        margin: 1.5rem 0;
-        text-align: center;
-    }
-    .preference-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #6b7280;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 1rem;
+        border-top: 1px solid #f0e8d8;
+        font-size: 0.7rem;
+        color: #b09880;
+        font-family: 'Sometype Mono', monospace;
     }
 
     /* ── Winner badge ── */
@@ -182,65 +197,97 @@ st.markdown("""
         display: inline-block;
         padding: 4px 12px;
         border-radius: 100px;
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        margin-top: 0.5rem;
+        margin-top: 0.6rem;
     }
-    .badge-a { background: #dbeafe; color: #1d4ed8; }
-    .badge-b { background: #dcfce7; color: #15803d; }
-    .badge-tie { background: #fef3c7; color: #92400e; }
+    .badge-a { background: #fdf0d5; color: #8a5c1e; border: 1px solid #e8c87a; }
+    .badge-b { background: #eaf0e4; color: #3d5c30; border: 1px solid #a8c490; }
+    .badge-tie { background: #fce8e6; color: #7a2e28; border: 1px solid #e8a8a4; }
 
-    /* ── Sidebar stats ── */
-    .stat-box {
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 0.9rem 1rem;
-        margin-bottom: 0.75rem;
-        text-align: center;
-    }
-    .stat-number {
-        font-size: 1.75rem;
+    /* ── Preference label ── */
+    .preference-label {
+        font-size: 0.75rem;
         font-weight: 700;
-        color: #111827;
-        line-height: 1;
-    }
-    .stat-label {
-        font-size: 0.72rem;
-        color: #6b7280;
+        color: #9c8a78;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-top: 0.25rem;
+        letter-spacing: 0.07em;
+        margin-bottom: 1rem;
     }
-
-    /* ── Generating spinner ── */
-    .generating-msg {
-        text-align: center;
-        color: #6b7280;
-        padding: 3rem 0;
-        font-size: 0.95rem;
-    }
-
-    /* ── Completed state ── */
-    .completed-card {
-        background: #f0fdf4;
-        border: 1.5px solid #86efac;
-        border-radius: 14px;
-        padding: 2rem;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .completed-card h2 { color: #15803d; }
-    .completed-card p { color: #166534; }
 
     /* ── Streamlit button overrides ── */
     div[data-testid="stButton"] button {
         border-radius: 8px;
         font-weight: 500;
+        font-size: 0.88rem;
         transition: all 0.15s ease;
+        border: 1.5px solid #d4c4a8 !important;
+        background-color: #ffffff !important;
+        color: #3d3530 !important;
+    }
+    div[data-testid="stButton"] button:hover {
+        background-color: #f5e9d5 !important;
+        border-color: #c9963a !important;
+        color: #8a5c1e !important;
+    }
+    div[data-testid="stButton"] button[kind="primary"] {
+        background-color: #c9963a !important;
+        border-color: #c9963a !important;
+        color: #ffffff !important;
+    }
+    div[data-testid="stButton"] button[kind="primary"]:hover {
+        background-color: #b5842e !important;
+        border-color: #b5842e !important;
+        color: #ffffff !important;
     }
 
-    /* hide streamlit branding */
+    /* ── Stat boxes ── */
+    .stat-box {
+        background: #ffffff;
+        border: 1.5px solid #e0d4c0;
+        border-radius: 10px;
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.75rem;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(139,108,70,0.06);
+    }
+    .stat-number {
+        font-family: 'Lora', serif;
+        font-size: 1.85rem;
+        font-weight: 700;
+        color: #c9963a;
+        line-height: 1;
+    }
+    .stat-label {
+        font-size: 0.68rem;
+        color: #9c8a78;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-top: 0.3rem;
+    }
+
+    /* ── Completed card ── */
+    .completed-card {
+        background: #eaf0e4;
+        border: 1.5px solid #a8c490;
+        border-radius: 12px;
+        padding: 2.5rem 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .completed-card h2 {
+        font-family: 'Lora', serif;
+        color: #3d5c30;
+        margin-bottom: 0.5rem;
+    }
+    .completed-card p { color: #4a6e3a; }
+
+    /* ── Dividers ── */
+    hr {
+        border-color: #e0d4c0 !important;
+    }
+
+    /* ── Hide Streamlit chrome ── */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -252,8 +299,11 @@ st.markdown("""
 
 def get_supabase_client():
     """Return a Supabase client if credentials are configured, else None."""
-    url = os.environ.get("SUPABASE_URL") or st.secrets.get("SUPABASE_URL", "")
-    key = os.environ.get("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY", "")
+    try:
+        url = os.environ.get("SUPABASE_URL") or st.secrets.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY", "")
+    except Exception:
+        url, key = "", ""
     if not url or not key:
         return None
     try:
@@ -276,7 +326,10 @@ def save_to_supabase(client, record: dict) -> bool:
 # ─── LLM Calls ───────────────────────────────────────────────────────────────
 
 def get_anthropic_client() -> anthropic.Anthropic:
-    api_key = os.environ.get("ANTHROPIC_API_KEY") or st.secrets.get("ANTHROPIC_API_KEY", "")
+    try:
+        api_key = os.environ.get("ANTHROPIC_API_KEY") or st.secrets.get("ANTHROPIC_API_KEY", "")
+    except Exception:
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
         st.error(
             "No ANTHROPIC_API_KEY found. Set it in `.streamlit/secrets.toml` or as an "
@@ -552,11 +605,14 @@ def render_responses(resp_a: dict, resp_b: dict, existing_pref: str | None):
     badge_tie_a = '<span class="winner-badge badge-tie">≈ Tie</span>' if existing_pref == "Tie" else ""
     badge_tie_b = '<span class="winner-badge badge-tie">≈ Tie</span>' if existing_pref == "Tie" else ""
 
+    text_a = _html.escape(resp_a['text'])
+    text_b = _html.escape(resp_b['text'])
+
     with col_a:
         st.markdown(f"""
         <div class="{card_class_a}">
             <div class="response-label response-label-a">Response A</div>
-            <div class="response-text">{resp_a['text']}</div>
+            <div class="response-text">{text_a}</div>
             <div class="response-meta">
                 {resp_a['model']} · {resp_a['output_tokens']} tokens · {resp_a['latency_s']}s
             </div>
@@ -568,7 +624,7 @@ def render_responses(resp_a: dict, resp_b: dict, existing_pref: str | None):
         st.markdown(f"""
         <div class="{card_class_b}">
             <div class="response-label response-label-b">Response B</div>
-            <div class="response-text">{resp_b['text']}</div>
+            <div class="response-text">{text_b}</div>
             <div class="response-meta">
                 {resp_b['model']} · {resp_b['output_tokens']} tokens · {resp_b['latency_s']}s
             </div>
