@@ -1,5 +1,5 @@
 # Challenge 2: RLHF Evaluation Report
-**Model:** GPT-2 (124M) | **Dataset:** 256 preference pairs (When2Speak voice assistant) | **Date:** 2026-03-22
+**Model:** GPT-2 (124M) | **Dataset:** 256 preference pairs 
 
 ---
 
@@ -15,7 +15,7 @@
 
 ## 2. Reward Model Training
 
-### v1 Configuration (Failed Run — from PDF)
+### v1 Configuration (Failed Run)
 ```
 learning_rate=5e-5 | batch_size=4 | grad_accum=2 | epochs=3 | max_length=256 | truncation_side="right"
 Loss: Bradley-Terry ranking loss: -log σ(r(chosen) - r(rejected))
@@ -75,7 +75,7 @@ learning_rate=2e-4 | batch_size=4 | grad_accum=2 | epochs=5 | max_length=256 | t
 
 ## 3. PPO Alignment Training
 
-### v1 Configuration (Failed Run — from PDF)
+### v1 Configuration (Failed Run )
 ```
 learning_rate=1.41e-5 | batch_size=4 | mini_batch_size=2
 ppo_epochs=4 | init_kl_coef=0.2 | target_kl=6.0
