@@ -260,7 +260,26 @@ The remaining limitation is silent rate = 0% — GPT-2 still does not generate `
 
 ---
 
-## 7. Key Takeaways
+## 7. Dataset Imbalance — Root Cause of 0% Silent Rate
+
+Analysis of the 256 preference pairs revealed a critical imbalance:
+
+| Scenario | Count | % | Signal to RM |
+|---|---|---|---|
+| chosen=silent, rejected=verbose | 88 | 34.4% | "silence is preferred" |
+| chosen=verbose, rejected=silent | 168 | 65.6% | "verbosity is preferred" |
+
+**The two signals are directly contradictory and the majority class wins 2:1.** The RM was learning to prefer verbose responses more often than silent ones, which propagated into PPO — the policy was never going to generate `(silent)` because the RM itself was penalizing it 65% of the time.
+
+**Fix applied — stratified split + oversampling:**
+- Split stratified by label type (80/20 within each class)
+- Type A (chosen=silent) oversampled in training to reach 50/50 balance
+- Result: RM now sees equal chosen=silent and chosen=verbose examples during training
+- Expected effect: RM learns a balanced signal → PPO can discover `(silent)` as a valid high-reward output
+
+---
+
+## 8. Key Takeaways
 
 1. **Truncation direction is critical for RLHF on dialogue data.** When the preference signal is at the *end* of a long conversation, right-truncation destroys it entirely — the RM trains on identical text for chosen and rejected.
 
